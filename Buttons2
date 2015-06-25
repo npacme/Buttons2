@@ -1,0 +1,856 @@
+Sub SuggestCuts()
+
+CutForm.Show
+
+End Sub
+
+Sub Toggle_Sales()
+
+Call FullYearSales
+Call FormulaTester
+
+End Sub
+
+Sub DownloadBS()
+
+If Worksheets("Controls").Range("CompanyNumber").Value = 1 Then
+    Call DownloadCo1
+End If
+
+
+If Worksheets("Controls").Range("CompanyNumber").Value = 3 Then
+    Call DownloadCo3
+End If
+
+    
+If Worksheets("Controls").Range("CompanyNumber").Value = 7 Then
+    Call DownloadCo7
+End If
+End Sub
+
+Sub CutList()
+'If ActiveSheet.Range("FA701") <> "701" Then
+'    MsgBox "A row or column has been illegally added or deleted!", vbCritical
+'    Exit Sub
+'End If
+
+'Application.ScreenUpdating = False
+
+
+Worksheets("Cut List").Range("A5:J2000") = vbNullString
+
+j = 5
+
+For columnNum = Range("OneWeekOut").Column + 4 To Range("LastWeek").Column - 3 Step 4
+
+    For RowNum = Range("StartRow").Row To Range("LastRow").Row
+        If ActiveSheet.Cells(RowNum, columnNum).Value <> 0 Then
+            
+            Worksheets("Cut List").Range("A" & j) = ActiveSheet.Cells(Range("HeaderWeights").Row, columnNum + 3).Value
+
+            Worksheets("Cut List").Range("B" & j & ":" & "E" & j) = ActiveSheet.Range("A" & RowNum & ":" & "D" & RowNum).Value
+            Worksheets("Cut List").Range("F" & j & ":" & "G" & j) = ActiveSheet.Range("I" & RowNum & ":" & "J" & RowNum).Value
+            Worksheets("Cut List").Range("H" & j) = ActiveSheet.Cells(RowNum, columnNum).Value
+            
+            j = j + 1
+            
+
+        End If
+    Next RowNum
+
+Next columnNum
+
+Worksheets("Cut List").Activate
+
+x = WorksheetFunction.CountA(ActiveSheet.Range("A4:A2000")) + 3
+
+For i = x To 5 Step -1
+
+    If ActiveSheet.Range("B" & i).Value = ActiveSheet.Range("A" & i - 1).Value Then
+        ActiveSheet.Range("B    " & i) = vbNullString
+    End If
+
+Next i
+
+'Application.ScreenUpdating = True
+
+ActiveSheet.Range("A5").Select
+
+
+End Sub
+
+Sub PlaceAnOrder()
+OrderForm.Show
+End Sub
+
+Sub ExportOrder()
+
+Dim WB As Workbook
+
+Dim Order As Worksheet
+
+Dim HeaderRow As Integer
+
+Set WB = ActiveWorkbook
+Set Order = WB.Worksheets("Order")
+HeaderRow = Range("HeaderWeights").Row
+
+If Selection.Row <> Range("HeaderWeights").Row Then
+    MsgBox "Click on the order weight of the order that you would like to export.", vbCritical
+    Exit Sub
+End If
+
+targetFound = 0
+For orderWeek = Range("OneWeekOut").Column + 1 To Range("LastWeek").Column - 2 Step 4
+    If Selection.Column = orderWeek Then
+        orderWeek = Range("LastWeek").Column + 1
+    End If
+Next orderWeek
+
+If orderWeek = 0 Then
+    MsgBox "Click on the order weight of the order that you would like to export.", vbCritical
+    Exit Sub
+End If
+
+If Selection.Value = 0 Then
+    MsgBox "There is not an order coming in on the week you selected!", vbCritical
+    Exit Sub
+Else
+    Worksheets("Order").Range("C5") = Selection.Offset(0, 2).Value
+    ActiveSheet.Range(ActiveSheet.Cells(Range("StartRow").Row, Selection.Column), ActiveSheet.Cells(Range("LastRow").Row, Selection.Column)).Select
+    Selection.Copy
+    Worksheets("Order").Select
+    ActiveSheet.Range("E8").Select
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+End If
+
+Worksheets("Order").Rows(Range("POHeaders").Row + 1 & ":" & Range("POLastRow").Row).Select
+Selection.EntireRow.Hidden = True
+    
+Application.ScreenUpdating = False
+
+For RowNum = Range("StartRow").Row To Range("LastRow").Row
+    If ActiveSheet.Range("E" & RowNum).Value > 0 Then
+        ActiveSheet.Rows(RowNum & ":" & RowNum).Select
+        Selection.EntireRow.Hidden = False
+    End If
+Next RowNum
+
+Application.ScreenUpdating = True
+
+ActiveSheet.Range("A1").Select
+
+
+End Sub
+Sub UploadReports()
+With Application
+    .DisplayAlerts = False
+    .ScreenUpdating = False
+End With
+
+CoNum = Worksheets("Controls").Range("CompanyNumber")
+UOM = Worksheets("Controls").Range("ControlUOM")
+BuyerSheet = Worksheets("Controls").Range("BuyerSheet")
+
+x = ActiveWorkbook.Name
+
+MISPath = "\\ibm01\INV.Hold\"
+
+'***BS S LBS
+
+MisFile11 = "BS" & CoNum & "-" & BuyerSheet & "-LBS"
+
+Workbooks.Open (MISPath & MisFile11)
+
+Worksheets(MisFile11).Cells.Select
+Selection.Copy
+Workbooks(x).Activate
+Worksheets("BS-LBS").Activate
+Worksheets("BS-LBS").Cells.Select
+ActiveSheet.Paste
+ActiveSheet.Range("A1").Select
+Worksheets("Review").Activate
+
+Windows(MisFile11).Activate
+ActiveWorkbook.Close False
+
+'***BS S PCS
+
+MisFile11 = "BS" & CoNum & "-" & BuyerSheet & "-Pcs"
+
+Workbooks.Open (MISPath & MisFile11)
+
+Worksheets(MisFile11).Cells.Select
+Selection.Copy
+Workbooks(x).Activate
+Worksheets("BS-Pcs").Activate
+Worksheets("BS-Pcs").Cells.Select
+ActiveSheet.Paste
+ActiveSheet.Range("A1").Select
+Worksheets("Review").Activate
+
+Windows(MisFile11).Activate
+ActiveWorkbook.Close False
+
+'***BS D LBS
+
+MisFile11 = "BS" & CoNum & "-" & "D" & "-LBS"
+
+Workbooks.Open (MISPath & MisFile11)
+
+Worksheets(MisFile11).Cells.Select
+Selection.Copy
+Workbooks(x).Activate
+Worksheets("BS Detail").Activate
+Worksheets("BS Detail").Cells.Select
+ActiveSheet.Paste
+ActiveSheet.Range("A1").Select
+Worksheets("Review").Activate
+
+Windows(MisFile11).Activate
+ActiveWorkbook.Close False
+
+'***OPO1
+MisFileOPO1 = "OPO" & CoNum
+
+Workbooks.Open (MISPath & MisFileOPO1)
+
+Worksheets(MisFileOPO1).Cells.Select
+Selection.Copy
+Workbooks(x).Activate
+Worksheets("OPO").Activate
+Worksheets("OPO").Cells.Select
+ActiveSheet.Paste
+ActiveSheet.Range("A1").Select
+Worksheets("Review").Activate
+Windows(MisFileOPO1).Activate
+ActiveWorkbook.Close False
+
+'***INV6400-1
+MisFileINV6400 = "INV6400-" & CoNum
+
+Workbooks.Open (MISPath & MisFileINV6400)
+
+Worksheets(MisFileINV6400).Cells.Select
+Selection.Copy
+Workbooks(x).Activate
+Worksheets("INV6400").Activate
+Worksheets("INV6400").Cells.Select
+ActiveSheet.Paste
+ActiveSheet.Range("A1").Select
+Worksheets("Review").Activate
+Windows(MisFileINV6400).Activate
+ActiveWorkbook.Close False
+
+UOM = "LBS"
+
+'***INV6401-1
+'MisFileINV6401 = "INV6401-" & CoNum & "-ALL-" & UOM & "-NA"
+MisFileINV6401 = "INV6401-" & CoNum & "-ALL-NA"
+
+
+Workbooks.Open (MISPath & MisFileINV6401)
+
+Worksheets(MisFileINV6401).Cells.Select
+Selection.Copy
+Workbooks(x).Activate
+Worksheets("Usage").Activate
+Worksheets("Usage").Cells.Select
+ActiveSheet.Paste
+ActiveSheet.Range("A1").Select
+Worksheets("Review").Activate
+Windows(MisFileINV6401).Activate
+ActiveWorkbook.Close False
+
+Call Skuwx
+Call ADSVarianceFormat
+Call FormulaTester
+Call CreateUsageTable
+Call AddLinks
+
+Worksheets("Review").Activate
+
+End Sub
+Sub CompileOrders()
+
+'If ActiveSheet.Range("FA701") <> "701" Then
+'    MsgBox "A row or column has been added or deleted!", vbCritical
+'    Exit Sub
+'End If
+
+Dim i, j, k As Integer
+Dim skuaddr, orderaddr As String
+Dim OrderDueDate, OrderQty As String
+Dim lateorder, week1 As String
+
+With Application
+    .Calculation = xlCalculationManual
+    .ScreenUpdating = False
+End With
+
+'//Clear Weekly Buckets
+For columnNum = Range("OneWeekOut").Column To Range("LastWeek").Column - 2 Step 4
+
+    ActiveSheet.Range(ActiveSheet.Cells(Range("StartRow").Row, columnNum), ActiveSheet.Cells(Range("LastRow").Row, columnNum + 1)) = vbNullString
+    Range(Cells(Range("StartRow").Row, columnNum), Cells(Range("LastRow").Row, columnNum + 1)) = vbNullString
+    
+Next columnNum
+
+'clear ignore sheet
+Worksheets("PO Ignore").Range("C2:F50000") = vbNullString
+
+Worksheets("OPOActive").Range("F2").Value = vbNullString
+
+
+
+IgnoreRow = 2
+
+
+
+For RowNum = Range("StartRow").Row To Range("LastRow").Row
+For skus = 1 To 4
+
+    orderaddr = Cells(RowNum, Range("InvOnOrder").Column).Address
+    lateorder = Cells(RowNum, Range("OneWeekOut").Column).Address
+    week1 = Cells(RowNum, Range("OneWeekOut").Column + 1).Address
+    If ActiveSheet.Cells(RowNum, skus).Value <> vbNullString Then
+        If ActiveSheet.Range(orderaddr).Value <> 0 Then
+            Worksheets("OPOActive").Range("F2") = "=" & """" & "=" & Worksheets("Review").Cells(RowNum, skus).Value & "X" & """"
+            Worksheets("OPOActive").Range("A10:P2000").AdvancedFilter Action:=xlFilterCopy, _
+            CriteriaRange:=Worksheets("OPOActive").Range("A1:P2"), CopyToRange:=Worksheets("OPOActive").Range("A2020:P2020"), _
+            Unique:=False
+
+            x = WorksheetFunction.CountA(Worksheets("OPOActive").Range("F2021:F2521"))
+            For numOrders = 2021 To 2021 + x
+
+                OrderDueDate = "E" & numOrders
+                OrderQty = "M" & numOrders
+                PONum = Worksheets("OPOActive").Cells(numOrders, 2)
+                POSKU = Worksheets("OPOActive").Cells(numOrders, 6)
+                POFlag = False
+                
+                For icheck = 2 To 100
+                    If PONum = Worksheets("PO Ignore").Cells(icheck, 1) And PONum <> vbNullString And Range("POIgnore").Text = "PO Ignore ON" Then
+                        POFlag = True
+                    End If
+                Next icheck
+                    
+                If POFlag = True Then
+                
+                
+                
+                    Worksheets("PO Ignore").Range("C" & IgnoreRow) = PONum
+                    Worksheets("PO Ignore").Range("D" & IgnoreRow) = Worksheets("OPOActive").Range(OrderDueDate)
+                    Worksheets("PO Ignore").Range("E" & IgnoreRow) = Worksheets("OPOActive").Range(OrderQty)
+                    Worksheets("PO Ignore").Range("F" & IgnoreRow) = POSKU
+                    IgnoreRow = IgnoreRow + 1
+                    
+                Else
+
+
+                If Worksheets("OPOActive").Range(OrderDueDate).Value <> vbNullString Then
+                    '//Need to see which week the order falls in
+                    'if the order is scheduled to arrive before next Monday, put it in the qty Due this week column
+                    If Worksheets("OPOActive").Range(OrderDueDate).Value < ActiveSheet.Cells(Range("HeaderWeights").Row, Range("OneWeekOut").Column + 3).Value - 2 Then
+                        ActiveSheet.Range(lateorder) = ActiveSheet.Range(lateorder).Value + Worksheets("OPOActive").Range(OrderQty).Value
+                    Else
+                        'If the order is due between next monday and next Friday, put it in the week1 column
+                        If Worksheets("OPOActive").Range(OrderDueDate).Value >= Cells(Range("HeaderWeights").Row, Range("OneWeekOut").Column + 3).Value - 2 And _
+                            Worksheets("OPOActive").Range(OrderDueDate).Value <= (Cells(Range("HeaderWeights").Row, Range("OneWeekOut").Column + 3).Value + 4) Then
+                            
+                            ActiveSheet.Range(week1) = ActiveSheet.Range(week1).Value + Worksheets("OPOActive").Range(OrderQty).Value
+                        Else
+                            columnCheck = Range("OneWeekOut").Column + 5
+                            Do While columnCheck <= Range("LastWeek").Column - 2
+                                If Worksheets("OPOActive").Range(OrderDueDate).Value >= (ActiveSheet.Cells(Range("HeaderWeights").Row, columnCheck - 2).Value + 5) And _
+                                    Worksheets("OPOActive").Range(OrderDueDate).Value <= ActiveSheet.Cells(Range("HeaderWeights").Row, columnCheck + 2).Value + 4 Then
+                                    ActiveSheet.Cells(RowNum, columnCheck) = ActiveSheet.Cells(RowNum, columnCheck).Value + Worksheets("OPOActive").Range(OrderQty).Value
+                                    columnCheck = columnCheck + 155
+                                Else
+                                    columnCheck = columnCheck + 4
+                                End If
+                            Loop
+                        End If
+                    End If
+                End If
+            End If
+            Next numOrders
+        End If
+    End If
+Next skus
+Next RowNum
+
+Call ADSVarianceFormat
+
+With Application
+    .Calculation = xlCalculationAutomatic
+    .ScreenUpdating = True
+End With
+
+End Sub
+
+Sub ShowAllColumns()
+x = Selection.Address
+
+Application.ScreenUpdating = False
+
+    Range(Cells(1, Range("OHInv").Column), Cells(Range("LastRow").Row, Range("LastWeek").Column)).Select
+    Selection.EntireColumn.Hidden = False
+    Selection.ColumnWidth = 10
+    ActiveSheet.Range("E2").Select
+    
+Application.ScreenUpdating = True
+
+ActiveSheet.Range(x).Select
+End Sub
+
+Sub ShowDaysStock()
+x = Selection.Address
+
+Application.ScreenUpdating = False
+
+
+Range(Cells(1, Range("OHInv").Column), Cells(Range("LastRow").Row, Range("LastWeek").Column)).Select
+
+
+Selection.EntireColumn.Hidden = False
+
+For k = Range("OneWeekOut").Column To Range("LastWeek").Column Step 4
+
+    ActiveSheet.Range(ActiveSheet.Cells(1, k), ActiveSheet.Cells(1, k + 2)).Select
+
+    Selection.EntireColumn.Hidden = True
+
+Next k
+    
+Application.ScreenUpdating = True
+
+ActiveSheet.Range(x).Select
+End Sub
+
+Sub POIgnore()
+    If Range("POIgnore").Text = "PO Ignore ON" Then
+        Range("POIgnore") = "PO Ignore OFF"
+    Else
+        Range("POIgnore") = "PO Ignore ON"
+    End If
+
+Call CompileOrders
+
+End Sub
+Sub ReviewTab()
+Worksheets("Review").Activate
+End Sub
+
+Sub ChangeQuantity()
+
+Application.ScreenUpdating = False
+
+x = Selection.Address
+
+If Range("RMorFG").Value = "(Net Avail FG + WIP) + RM (LBS)" Then
+    
+    Range("RMorFG") = "RM (LBS)"
+    
+    Range("RMorFG").Select
+    With Selection.Interior
+        .Pattern = xlSolid
+        .PatternColorIndex = xlAutomatic
+        .Color = 15773696
+        .TintAndShade = 0
+        .PatternTintAndShade = 0
+    End With
+    
+    
+    Cells(Range("HeaderWeights").Row + 1, Range("OHINV").Column).Select
+    ActiveCell.FormulaR1C1 = "=IF(RC1 = """", 0 , RC" & Range("NetInvAvail").Column & "+RC" & Range("WIP").Column & ")"
+    Cells(Range("HeaderWeights").Row + 1, Range("OHINV").Column).Select
+    Selection.AutoFill Destination:=ActiveSheet.Range(Cells(Range("StartRow").Row, Range("OHINV").Column), Cells(Range("LastRow").Row - 1, Range("OHINV").Column))
+    
+    
+    
+    'ActiveSheet.Range("AB8").Select
+    'ActiveCell.FormulaR1C1 = _
+    '    "=if(OR(RC1="""",RC23=0),"""",IF(OR(RC20=0,(RC15-(R7C28-Today())*RC23)/RC23<RC20),RC24+RC26+RC27-(R7C28-Today())*RC23,RC24+RC26+RC27))"
+    'ActiveSheet.Range("AB8").Select
+    'Selection.AutoFill Destination:=ActiveSheet.Range("AB8:AB500")
+
+
+Else
+
+    Range("RMorFG").Select
+    With Selection.Interior
+        .Pattern = xlSolid
+        .PatternColorIndex = xlAutomatic
+        .Color = 5287936
+        .TintAndShade = 0
+        .PatternTintAndShade = 0
+    End With
+        
+
+    Range("RMorFG") = "(Net Avail FG + WIP) + RM (LBS)"
+    
+    Cells(Range("HeaderWeights").Row + 1, Range("OHINV").Column).Select
+    ActiveCell.FormulaR1C1 = "=IF(RC1 = """", 0 , RC" & Range("NetInvAvail").Column & "+RC" & Range("WIP").Column & " + RC" & Range("FinishedGoods").Column & ")"
+    Cells(Range("HeaderWeights").Row + 1, Range("OHINV").Column).Select
+    Selection.AutoFill Destination:=ActiveSheet.Range(Cells(Range("StartRow").Row, Range("OHINV").Column), Cells(Range("LastRow").Row - 1, Range("OHINV").Column))
+    
+    'ActiveSheet.Range("AB8").Select
+    'ActiveCell.FormulaR1C1 = _
+    '    "=IF(RC1="""","""",(RC11+RC13+RC15)-((R7C28-R7C24)*RC23)+RC26+RC27)"
+    'ActiveSheet.Range("AB8").Select
+    'Selection.AutoFill Destination:=ActiveSheet.Range(Cells(Range("StartRow").Row, Range("OHINV").Column), Cells(Range("LastRow").Row - 1, Range("OHINV").Column))
+
+    
+End If
+
+Call FormulaTester
+
+ActiveSheet.Range(x).Select
+
+Application.ScreenUpdating = True
+
+'Call FormulaTester
+
+End Sub
+
+
+Sub FullYearSales()
+
+Application.Calculation = xlCalculationManual
+Application.ScreenUpdating = False
+
+        
+        If Cells(Range("Headerweights").Row, Range("UserInputSales").Column) <> "ADS 365" Then
+        
+            Cells(Range("Headerweights").Row, Range("UserInputSales").Column) = "ADS 365"
+            
+                    For r = Range("StartRow").Row To Range("LastRow").Row - 1
+                    
+                        Cells(r, Range("UserInputSales").Column).FormulaR1C1 = "=if(RC" & Range("ADSOverride").Column & "= """",Sum(RC" & Range("ADSYear").Column & "),RC" & Range("ADSOverride").Column & ")"
+                    
+
+                    Next r
+    
+        
+        Else
+            
+                Cells(Range("Headerweights").Row, Range("UserInputSales").Column) = "ADS 90 + Usage 90"
+                
+                For r = Range("StartRow").Row To Range("LastRow").Row - 1
+                        
+                        Cells(r, Range("UserInputSales").Column).FormulaR1C1 = "=if(RC" & Range("ADSOverride").Column & "= """",Sum(RC" & Range("ADNinety").Column & ", RC" & Range("UsageNinety").Column & ") , RC" & Range("ADSOverride").Column & ")"
+                                                
+                Next r
+                    
+        End If
+        
+
+Application.Calculation = xlCalculationAutomatic
+Application.ScreenUpdating = True
+
+End Sub
+
+
+Sub BuildContainer2()
+'==================================================
+'this module is meant to be run after an order
+'is exported form the Review tab.  It breaks orders
+'into multiple POs so that they can
+'be issued at container size
+'==================================================
+
+Dim WB As Workbook
+Dim POBreakout As Worksheet
+Dim Order As Worksheet
+
+
+Set WB = ActiveWorkbook
+Set POBreakout = WB.Worksheets("PO Breakout")
+Set Order = WB.Worksheets("Order")
+
+POBreakout.Activate
+
+'==============
+'clear old data
+'==============
+Worksheets("PO Breakout").Range(Cells(Range("StartRow").Row, 1), Cells(Range("LastRow").Row, 4000)) = vbNullString
+
+'=========================================
+'cr variable initialize for the loop below
+'so that it outputs data to the PO Breakout
+'Tab starting on row 7
+'=========================================
+cr = 7
+
+'===============================================
+'This loop looks for SKUs in the order tab that
+'have an order order quantity and populates them
+'on the PO Breakout tab.
+'================================================
+
+For r = Range("StartRow").Row To Range("LastRow").Row
+    If Worksheets("Order").Cells(r + 1, 5) > 0 Then
+        
+        SKU = Worksheets("Order").Cells(r + 1, 1).Text
+        Desc = Worksheets("Order").Cells(r + 1, 4).Text
+        TQty = Worksheets("Order").Cells(r + 1, 5)
+        UOM = Worksheets("Review").Cells(r, Range("UnitOfMeasure").Column)
+        '========================================
+        'Lookup functions for SKU Weight, Pitch,
+        'and pack quantity from the INV6400 sheet
+        '========================================
+        UWeight = WorksheetFunction.Index(Worksheets("INV6400").Range("A:DD"), _
+            WorksheetFunction.Match(SKU & "x", Worksheets("INV6400").Range("C:C"), 0), 20)
+        Pitch = WorksheetFunction.Index(Worksheets("INV6400").Range("A:DD"), _
+            WorksheetFunction.Match(SKU & "x", Worksheets("INV6400").Range("C:C"), 0), 26)
+        PackQty = WorksheetFunction.Index(Worksheets("INV6400").Range("A:DD"), _
+            WorksheetFunction.Match(SKU & "x", Worksheets("INV6400").Range("C:C"), 0), 38)
+        If PackQty < 5 Then
+            PackQty = 5
+        End If
+        '========================================
+        'Ext is the total weight of the line item
+        '========================================
+        ExtWeight = UWeight * TQty
+        
+        
+        Worksheets("PO Breakout").Cells(cr, 1) = SKU
+        Worksheets("PO Breakout").Cells(cr, 2) = Desc
+        Worksheets("PO Breakout").Cells(cr, 3) = TQty
+        Worksheets("PO Breakout").Cells(cr, 4) = UOM
+        Worksheets("PO Breakout").Cells(cr, 13) = UWeight
+        Worksheets("PO Breakout").Cells(cr, 14) = PackQty
+        Worksheets("PO Breakout").Cells(cr, 15) = ExtWeight
+    
+        
+        cr = cr + 1
+    End If
+
+Next r
+
+'==============================================================
+'collect number of SKUs for use in below loops (Counta function)
+'==============================================================
+LastSKU = WorksheetFunction.CountA(Worksheets("PO Breakout"). _
+    Range(Cells(Range("StartRow").Row, 1), Cells(Range("LastRow").Row, 1)))
+
+'=================================================
+'sort by extended PO weight (may not be necessary)
+'=================================================
+ActiveWorkbook.Worksheets("PO Breakout").Sort.SortFields.Clear
+ActiveWorkbook.Worksheets("PO Breakout").Sort.SortFields.Add _
+    Key:=Range(Cells(Range("StartRow").Row - 1, 15), Cells(LastSKU + 6, 15)), _
+    SortOn:=xlSortOnValues, Order:=xlDescending, DataOption:=xlSortNormal
+With ActiveWorkbook.Worksheets("PO Breakout").Sort
+    .SetRange Range(Cells(Range("StartRow").Row - 1, 1), Cells(LastSKU + 6, 15))
+    .Header = xlYes
+    .MatchCase = False
+    .Orientation = xlTopToBottom
+    .SortMethod = xlPinYin
+    .Apply
+End With
+
+'========================================
+'POStart is a workbook range representing
+'the first Column where PO quantity is
+'broken out. StartRow is also a range,
+'but represents the first row after the
+'headers on the PO Breakout worksheet
+'========================================
+
+clm = Range("POStart").Column
+rw = Range("StartRow").Row
+
+'==================================
+'calculate the number of POs needed
+'based on the total order weight
+'==================================
+'Stop
+
+PONum = WorksheetFunction.RoundUp(Range("TotalWeight").Value _
+    / Range("POMaxWeight").Value, 0)
+
+'=====================================================
+'This loop handles instances where the extended weight
+'for a SKU is greater than the max container weight.
+'SKUs like this will have to be broken into multiple
+'containers.
+'=====================================================
+'Stop
+For r = Range("StartRow").Row To LastSKU + 6
+    PackQty = Worksheets("PO Breakout").Cells(r, 14)
+        '=========================================
+        'POMaxWeight is a range on the Order tab
+        'where a user can enter the max weight of
+        'their container.  This allows the program
+        'to account for containers of varying sizes.
+        '==========================================
+        If POBreakout.Cells(r, 15) > Range("POMaxWeight").Value Then
+            '======================================
+            'nr represents the number of containers
+            'represented by a SKUs extended weight
+            '======================================
+            nr = POBreakout.Cells(r, 15) / Range("POMaxWeight").Value
+            '================================================
+            'Populate the Order quantity for the overweight
+            'SKUs first, incrementing the order column by the
+            'number of containers calculated above for the NR
+            'variable
+            '================================================
+            
+            For t = 1 To nr
+            
+                POBreakout.Cells(r, clm) = WorksheetFunction.MRound((Range("POMaxWeight").Value / Cells(r, 13)), PackQty)
+                
+                clm = clm + 1
+            Next t
+            
+        End If
+Next r
+'Stop
+'================================================
+'Populate PO quantities based on container weight
+'PONum is the number of containers (Orders) calc-
+'ulated above from the max container weight
+'================================================
+For PO = 1 To PONum
+'    Stop
+    POCol = Range("POStart").Column + PO - 1
+    For r = Range("StartRow").Row To LastSKU + 6
+        PackQty = Worksheets("PO Breakout").Cells(r, 14)
+        
+        '====================================================
+        'Checks to see if quantity entered so far for the SKU
+        'is less than the total order quantity required
+        '====================================================
+        If WorksheetFunction.Sum(Range(POBreakout.Cells(r, Range("POStart").Column), _
+            POBreakout.Cells(r, Range("POEnd").Column))) < Cells(r, 3) Then
+                
+                SKUOrderQty = POBreakout.Cells(r, 3)
+                SKUWeight = POBreakout.Cells(r, 13)
+                SKUExtWeight = SKUOrderQty * SKUWeight
+                SKUQtyAllocated = WorksheetFunction.Sum(Range(POBreakout.Cells(r, Range("POStart").Column), _
+                    POBreakout.Cells(r, Range("POEnd").Column)))
+                SKUQtyLeft = SKUOrderQty - SKUQtyAllocated
+                SKUWeightLeft = SKUQtyLeft * SKUWeight
+                POWeight = POBreakout.Cells(Range("POWeights").Row, POCol)
+                WeightToFillPO = Range("POMaxWeight") - POWeight
+
+                If POWeight + SKUWeightLeft < Range("POMaxWeight").Value Then
+                    
+                        '==========================================================
+                        'If the max container weight is greater than the weight left
+                        'to allocate for the SKU then:
+                        '==========================================================
+
+                        POBreakout.Cells(r, POCol) = SKUQtyLeft
+
+                    
+                Else
+                    If WeightToFillPO > SKUWeight * PackQty And Round(SKUWeightLeft, 0) / Round(WeightToFillPO, 0) < 2 And SKUWeightLeft < SKUExtWeight Then
+                
+                    POBreakout.Cells(r, POCol) = Round(WeightToFillPO / SKUWeight, 0)
+                    
+                    End If
+                
+                End If
+
+        End If
+    Next r
+Next PO
+
+End Sub
+
+Sub OrderTab()
+
+Worksheets("Order").Activate
+
+End Sub
+Sub CutsTab()
+
+Worksheets("Cut List").Activate
+
+End Sub
+Sub GetQuotes()
+    QuoteForm2.Show
+End Sub
+Sub PopulateRFQ()
+
+
+'=====================
+'Variable Declarations
+'=====================
+
+Dim WB As Workbook
+
+Dim Order As Worksheet
+Dim RFQ As Worksheet
+
+Dim OrderHead As Integer
+Dim OrderLast As Integer
+
+'======================
+'Variable Assignments
+'======================
+
+With Application
+    .ScreenUpdating = False
+    .Calculation = xlCalculationManual
+End With
+
+
+Set WB = ActiveWorkbook
+Set Order = WB.Worksheets("Order")
+Set RFQ = WB.Worksheets("RFQ")
+
+OrderHead = Order.Range("POHeaders").Row + 1
+OrderLast = Range("LastRow").Row
+rq = Range("RFQHeaders").Row + 1
+LastColumn = Range("RFQLastQuote").Column
+
+Range(RFQ.Cells(rq, 1), RFQ.Cells(1000, LastColumn)).ClearContents
+
+
+For r = OrderHead To OrderLast
+    If Order.Cells(r, Range("POQTY").Column) > 0 And _
+    Order.Cells(r, Range("POSkus").Column) <> vbNullString Then
+        RFQ.Cells(rq, Range("RFQSKU").Column) = Order.Cells(r, Range("POSkus").Column)
+        RFQ.Cells(rq, Range("RFQDescription").Column) = Order.Cells(r, Range("POSkus").Column + 3)
+        RFQ.Cells(rq, Range("RFQPieces").Column) = Order.Cells(r, Range("POQTY").Column)
+        RFQ.Cells(rq, Range("RFQWeightPerPiece").Column) = Order.Cells(r, Range("POSkuWeights").Column)
+        RFQ.Cells(rq, Range("RFQLBS").Column).FormulaR1C1 = "=RC[-1]*RC[-2]"
+        rq = rq + 1
+    End If
+Next r
+
+For c = Range("RFQFirstQuote").Column To Range("RFQLastQuote").Column
+    RFQ.Cells(5, c).ClearContents
+    RFQ.Cells(6, c) = "Select Unit of Measure"
+    RFQ.Cells(7, c) = "Select Incoterm"
+Next c
+
+With Application
+    .ScreenUpdating = True
+    .Calculation = xlCalculationAutomatic
+End With
+
+
+
+
+RFQ.Activate
+
+End Sub
+Sub ViewRFQ()
+
+Dim WB As Workbook
+Dim RFQ As Worksheet
+
+Set WB = ActiveWorkbook
+Set RFQ = WB.Worksheets("RFQ")
+
+RFQ.Activate
+
+
+End Sub
